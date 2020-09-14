@@ -1,0 +1,44 @@
+metadata:
+    format: "Lava-Test Test Definition 1.0"
+    name: deqp-runner
+    description: "The drawElements Quality Program (deqp) Testing allows to test OpenGL API's, uses
+                  OpenGL ES CTS from https://github.com/KhronosGroup/VK-GL-CTS."
+
+    maintainer:
+        - anibal.limon@linaro.org
+    os:
+        - openembedded
+    scope:
+        - functional
+    devices:
+        - dragonboard410c
+        - dragonboard820c
+        - dragonboard845c
+
+params:
+    DISPLAY: ":0"
+    EGL_PLATFORM: "surfaceless"
+    DEQP_BIN: "deqp-gles2"
+    DEQP_CASES: ""
+    DEQP_FAIL: ""
+    DEQP_EXCLUDE: ""
+    DEQP_RUNNER_OPTIONS: "--compact-display false --shuffle false --allow-flakes true"
+    DEQP_RUNNER_JOBS: ""
+    DEQP_OPTIONS: "--deqp-surface-width=256 --deqp-surface-height=256 --deqp-surface-type=pbuffer --deqp-gl-config-name=rgba8888d24s8ms0 --deqp-visibility=hidden --deqp-shadercache=disable"
+
+run:
+    steps:
+        - export DISPLAY=${DISPLAY}
+        - export EGL_PLATFORM=${EGL_PLATFORM}
+        - cd ./automated/linux/deqp-runner
+        - set +e
+        - deqp-runner --deqp ${DEQP_BIN} --output result.txt ${DEQP_CASES} ${DEQP_FAIL} ${DEQP_EXCLUDE} ${DEQP_RUNNER_OPTIONS} ${DEQP_RUNNER_JOBS} -- ${DEQP_OPTIONS}
+        - DEQP_EXITCODE=$?
+        - set -e
+        - test_case_name="$(basename ${DEQP_BIN})"
+        - if [ $DEQP_EXITCODE -eq 0 ]; then
+        -   lava-test-case "$test_case_name" --result "pass"
+        - else
+        -   egrep -v "(,Pass|,Skip|,ExpectedFail)" result.txt
+        -   lava-test-case "$test_case_name" --result "fail"
+        - fi
