@@ -35,10 +35,13 @@ run:
         - deqp-runner --deqp ${DEQP_BIN} --output result.txt ${DEQP_CASES} ${DEQP_FAIL} ${DEQP_EXCLUDE} ${DEQP_RUNNER_OPTIONS} ${DEQP_RUNNER_JOBS} -- ${DEQP_OPTIONS}
         - DEQP_EXITCODE=$?
         - set -e
-        - test_case_name="$(basename ${DEQP_BIN})"
+        - test_set_name="$(basename ${DEQP_BIN})"
+        - lava-test-set start "$test_set_name"
+        - ./deqp-runner-lava.py result.txt
+        - lava-test-set stop
         - if [ $DEQP_EXITCODE -eq 0 ]; then
-        -   lava-test-case "$test_case_name" --result "pass"
+        -   lava-test-case "$test_set_name" --result "pass"
         - else
+        -   lava-test-case "$test_set_name" --result "fail"
         -   egrep -v "(,Pass|,Skip|,ExpectedFail)" result.txt
-        -   lava-test-case "$test_case_name" --result "fail"
         - fi
